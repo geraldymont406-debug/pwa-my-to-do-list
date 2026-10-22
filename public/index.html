@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My To-Do List</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#483D8B">
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg-color: #CCCCFF;
+      --panel-bg: #FFFFFF;
+      --card-bg: #FFFFFF;
+      --text-color: #374151;
+      --primary-color: #483D8B;
+      --sidebar-bg: #FFFFFF;
+      --input-bg: #FAFAFF;
+      --border-color: #CBD5E1;
+      --periwinkle-bg: #FFFFFF;
+      --timer-bg: #F1F5F9;
+      --timer-text: #374151;
+    }
+
+    body.dark-mode {
+      --bg-color: #121212;
+      --panel-bg: #1E1E24;
+      --card-bg: #22222C;
+      --text-color: #E2E8F0;
+      --primary-color: #A78BFA;
+      --sidebar-bg: #18181B;
+      --input-bg: #27272A;
+      --border-color: #3F3F46;
+      --periwinkle-bg: #D8D8FF;
+      --timer-bg: #E0E7FF;
+      --timer-text: #1E1B4B;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0; padding: 0; min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    .login-wrapper {
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+      background: linear-gradient(135deg, var(--bg-color) 0%, var(--panel-bg) 100%); padding: 20px;
+    }
+    .login-box {
+      background: var(--panel-bg); padding: 40px; border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(72, 61, 139, 0.2); width: 100%; max-width: 380px; text-align: center;
+    }
+    .login-box h1 { margin-bottom: 20px; color: var(--primary-color); font-size: 28px; }
+    .app-container { display: flex; height: 100vh; overflow: hidden; }
+    
+    .sidebar {
+      width: 280px; background: var(--sidebar-bg); border-right: 2px solid var(--border-color);
+      padding: 24px; display: flex; flex-direction: column; box-shadow: 4px 0 10px rgba(0,0,0,0.03);
+      height: 100vh; position: sticky; top: 0; z-index: 100;
+    }
+    .sidebar-header {
+      display: flex; justify-content: space-between; align-items: center; width: 100%;
+    }
+    .sidebar h2 { font-size: 22px; color: var(--primary-color); margin: 0; text-align: left; flex: 1; }
+    
+    .top-actions { display: flex; gap: 8px; align-items: center; position: relative; }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--primary-color);
+      cursor: pointer;
+      padding: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dropdown-menu {
+      position: absolute; right: 0; top: 35px; background: var(--panel-bg);
+      border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: none; flex-direction: column; width: 180px; z-index: 1000; overflow: hidden;
+    }
+    .dropdown-menu.active { display: flex; }
+    .dropdown-item {
+      padding: 10px 14px; font-size: 13px; font-weight: 700; color: var(--text-color);
+      background: transparent; border: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    }
+    .dropdown-item:hover { background: var(--bg-color); color: var(--primary-color); }
+
+    .menu-toggle { display: none; }
+
+    .user-tag { background: var(--input-bg); color: var(--primary-color); padding: 10px; border-radius: 12px; font-weight: 700; font-size: 13px; margin-top: 15px; margin-bottom: 20px; text-align: center; word-break: break-all; border: 1px solid var(--border-color); }
+    .nav-filters { list-style: none; padding: 0; margin: 0 0 auto 0; overflow-y: auto; }
+    .nav-filters li {
+      padding: 12px 16px; margin-bottom: 8px; border-radius: 12px;
+      cursor: pointer; font-weight: 700; color: #64748B; transition: all 0.2s;
+    }
+    .nav-filters li:hover, .nav-filters li.active {
+      background: var(--bg-color); color: var(--primary-color);
+    }
+    .main-content { flex: 1; padding: 32px; overflow-y: auto; height: 100vh; background-color: var(--bg-color); }
+    
+    .search-bar-container { margin-bottom: 20px; }
+    .search-input { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 14px; background: var(--panel-bg); color: var(--text-color); font-size: 14px; }
+
+    .form-card, .settings-card {
+      background: var(--panel-bg); padding: 24px; border-radius: 18px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.08); margin-bottom: 32px; border: 1px solid var(--border-color);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .full-width { grid-column: span 2; }
+    label { font-size: 13px; font-weight: 700; color: var(--primary-color); display: block; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border-color);
+      border-radius: 12px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text-color);
+    }
+    textarea { resize: vertical; height: 65px; }
+
+    button, .btn-action, .btn-wa {
+      cursor: pointer; border: none; border-radius: 12px;
+      font-weight: 700; font-size: 13px; transition: all 0.2s ease;
+      padding: 10px 16px; display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    button:hover, .btn-action:hover, .btn-wa:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      opacity: 0.95;
+    }
+    button:active { transform: translateY(0); }
+
+    .btn-add { background: #6A5ACD; color: white; width: 100%; margin-top: 16px; padding: 12px; }
+    .btn-logout { background: #FF6B6B; color: white; width: 100%; padding: 12px; }
+    .btn-setting { background: var(--primary-color); color: white; padding: 12px 20px; width: 100%; }
+
+    .tasks-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px;
+    }
+    .task-card {
+      border-radius: 18px; padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      display: flex; flex-direction: column; justify-content: space-between; position: relative;
+      min-height: 200px; border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .pastel-0 { background: #FFFDE7 !important; border-left: 6px solid #FBC02D !important; color: #1E293B !important; }
+    .pastel-1 { background: #FFF3E0 !important; border-left: 6px solid #FB8C00 !important; color: #1E293B !important; }
+    .pastel-2 { background: #FCE4EC !important; border-left: 6px solid #EC407A !important; color: #1E293B !important; }
+    .pastel-3 { background: #F3E5F5 !important; border-left: 6px solid #AB47BC !important; color: #1E293B !important; }
+    .pastel-4 { background: #E1F5FE !important; border-left: 6px solid #29B6F6 !important; color: #1E293B !important; }
+
+    .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-right: 35px; }
+    .task-title { font-weight: 800; font-size: 17px; word-break: break-word; color: #0F172A !important; }
+    .task-desc { font-size: 13px; margin: 8px 0 12px 0; white-space: pre-wrap; color: #334155 !important; }
+    .task-meta { font-size: 12px; font-weight: 700; margin-top: 5px; color: #475569 !important; }
+    
+    .btn-edit-pencil {
+      position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; cursor: pointer; border: 1px solid #CBD5E1; z-index: 10; color: #000;
+    }
+    
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dot-urgente { background-color: #EF4444; }
+    .dot-media { background-color: #F59E0B; }
+    .badge-category {
+      background: rgba(255, 255, 255, 0.95); padding: 5px 10px; border-radius: 10px;
+      font-size: 11px; font-weight: 800; color: #374151; border: 1px solid #CBD5E1;
+    }
+
+    .task-actions { display: flex; gap: 8px; margin-top: 14px; width: 100%; }
+    .task-actions .btn-action, .task-actions .btn-wa {
+      flex: 1 1 0px !important;
+      min-width: 0 !important;
+      padding: 10px 4px !important;
+      font-size: 12px !important;
+      text-align: center;
+      justify-content: center;
+    }
+    .btn-check { background: #10B981; color: white; }
+    .btn-delete { background: #EF4444; color: white; }
+    .btn-wa { background: #25D366; color: white; }
+
+    .completed .task-title, .completed .task-desc { text-decoration: line-through; opacity: 0.6; }
+    .hidden { display: none !important; }
+
+    /* MODALES */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-content { background: var(--panel-bg); color: var(--text-color); padding: 25px; border-radius: 18px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
+
+    /* CALENDARIOS */
+    .calendar-container, .history-calendar-card { background: var(--panel-bg); padding: 25px; border-radius: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); position: relative; }
+    .calendar-controls { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    
+    .calendar-grid, .history-cal-grid { 
+      display: grid; 
+      grid-template-columns: repeat(7, 1fr); 
+      gap: 6px; 
+      text-align: center; 
+    }
+    
+    .calendar-day-head { font-weight: 800; color: var(--primary-color); padding: 8px 2px; background: var(--input-bg); border-radius: 8px; font-size: 12px; }
+    
+    .calendar-day, .history-day-cell { 
+      background: var(--input-bg); 
+      border: 1px solid var(--border-color); 
+      border-radius: 10px; 
+      height: 75px !important; 
+      padding: 4px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: flex-start;
+      overflow: hidden !important; 
+      cursor: pointer;
+    }
+    .calendar-day:hover, .history-day-cell:hover { border-color: var(--primary-color); }
+    
+    .calendar-day-num { font-weight: 700; font-size: 11px; color: var(--primary-color); margin-bottom: 2px; }
+    
+    .cal-task-tag {
+      color: white; font-size: 9px; padding: 2px 4px; border-radius: 4px;
+      margin-top: 2px; width: 100%; text-align: left; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; font-weight: 700;
+    }
+    .cal-urgente { background-color: #EF4444 !important; }
+    .cal-media { background-color: #F59E0B !important; color: #1E293B !important; }
+    .cal-normal { background-color: #6A5ACD !important; }
+
+    /* RESUMEN DÍA ACTUAL DE INGLÉS */
+    .today-summary-card {
+      background: var(--panel-bg);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .today-summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .today-breakdown {
+      margin-top: 15px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .today-app-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* TARJETAS DE INGLÉS */
+    .streaks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .streak-card {
+      background: var(--periwinkle-bg) !important; 
+      border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      text-align: center; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      min-height: 250px; border: 2px solid #CBD5E1; color: var(--text-color) !important;
+    }
+    body.dark-mode .streak-card {
+      background: var(--periwinkle-bg) !important;
+      border-color: #A5A5FE !important;
+      color: #2D2D5A !important;
+    }
+
+    .app-header-link { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; color: var(--primary-color); font-weight: 800; font-size: 18px; margin-bottom: 8px; }
+    body.dark-mode .app-header-link { color: #3A3A7C !important; }
+
+    .app-icon-wrapper { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .app-icon { max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; }
+    .streak-flame-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 26px; font-weight: 800; color: #D97706; margin: 6px 0; }
+
+    .timer-display { 
+      font-size: 14px; font-weight: 800; 
+      color: var(--timer-text) !important; 
+      background: var(--timer-bg) !important; 
+      padding: 8px 12px; border-radius: 12px; margin: 8px 0; 
+      border: 1px solid var(--border-color); width: 100%; cursor: pointer; 
+    }
+    
+    .stats-dashboard { 
+      background: var(--panel-bg); 
+      border-radius: 20px; padding: 28px; box-shadow: 0 6px 15px rgba(0,0,0,0.05); margin-bottom: 24px; color: var(--primary-color);
+      border: 1px solid var(--border-color);
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
+    .stat-card { 
+      background: #FFFFFF !important; 
+      border: 1px solid #E2E8F0 !important; border-radius: 16px; padding: 18px; text-align: center; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    body.dark-mode .stat-card {
+      background: #22222C !important;
+      border-color: #3F3F46 !important;
+    }
+    .stat-card h4 { margin: 0 0 8px 0; color: #64748B; font-size: 12px; text-transform: uppercase; font-weight: 800; }
+    .stat-card span { font-size: 22px; font-weight: 800; color: var(--primary-color); }
+
+    .history-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .history-day-cell.studied { background: #D1FAE5; border: 1px solid #10B981; color: #065F46; }
+    .history-icons-container { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 2px; }
+    .history-mini-icon { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; }
+
+    /* BLOC DE NOTAS */
+    .notepad-container { background: var(--panel-bg); padding: 25px; border-radius: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); position: relative; }
+    .notepad-editor { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+    .notepad-list { display: flex; flex-direction: column; gap: 14px; }
+    .notepad-item { background: var(--card-bg); border-left: 5px solid #FBC02D; padding: 16px; border-radius: 12px; position: relative; border: 1px solid var(--border-color); }
+    .note-date-tag { font-size: 11px; color: #78909C; font-weight: 700; margin-bottom: 4px; display: block; }
+    .note-top-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; align-items: center; }
+    .btn-icon-note { background: transparent; border: none; cursor: pointer; font-size: 16px; padding: 2px; }
+
+    .risk-badge { background: #FEE2E2; color: #DC2626; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .safe-badge { background: #D1FAE5; color: #059669; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+    .btn-practice { background: #10B981; color: white; width: 100%; margin-top: 8px; }
+
+    /* ADAPTACIÓN PARA CELULARES */
+    @media (max-width: 768px) {
+      .app-container { flex-direction: column; height: auto; overflow: auto; }
+      .sidebar { width: 100%; height: auto; position: sticky; top: 0; border-right: none; border-bottom: 2px solid var(--border-color); padding: 16px; z-index: 100; }
+      .menu-toggle { display: inline-flex; } 
+      
+      .sidebar-content-wrapper { display: none; flex-direction: column; margin-top: 10px; }
+      .sidebar-content-wrapper.active { display: flex; }
+
+      .main-content { padding: 12px; height: auto; overflow: visible; }
+      .form-grid { grid-template-columns: 1fr; }
+      .full-width { grid-column: span 1; }
+
+      .calendar-container, .history-calendar-card { padding: 10px !important; }
+      .calendar-grid, .history-cal-grid { gap: 3px !important; }
+      .calendar-day, .history-day-cell { height: 65px !important; padding: 2px !important; }
+      .calendar-day-head { padding: 4px 1px !important; font-size: 10px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="auth-section" class="login-wrapper">
+    <div class="login-box">
+      <h1 id="txt-login-title">My To-Do List</h1>
+      <p id="txt-login-subtitle" style="color: #5A5A8A; font-size: 14px; margin-bottom: 20px;">Ingresa tus datos para acceder</p>
+      <div style="text-align: left;">
+        <label id="txt-label-email">Correo de Gmail</label>
+        <input type="email" id="email-input" placeholder="tu_correo@gmail.com">
+        <br><br>
+        <label id="txt-label-wa">Número de WhatsApp (ej. +521234567890)</label>
+        <input type="text" id="whatsapp-input" placeholder="+521234567890">
+      </div>
+      <button class="btn-add" onclick="login()" id="btn-login">Ingresar</button>
+    </div>
+  </div>
+
+  <!-- APP PRINCIPAL -->
+  <div id="todo-section" class="app-container hidden">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>My To-Do List</h2>
+        <div class="top-actions">
+          <button class="icon-btn" onclick="setFilter('ajustes')" title="Ajustes">⚙️</button>
+          
+          <div id="notes-dropdown-container" class="hidden">
+            <button class="icon-btn" onclick="toggleNotesMenu(event)" title="Menú notas">⋮</button>
+            <div id="notes-dropdown-menu" class="dropdown-menu">
+              <button class="dropdown-item" onclick="openHiddenNotesMenu()">🔒 Notas Ocultas</button>
+              <button class="dropdown-item" onclick="openTrashModal()">🗑️ Papelera</button>
+              <button class="dropdown-item" onclick="openGalleryModal()">🖼️ Galería</button>
+            </div>
+          </div>
+
+          <button class="icon-btn menu-toggle" onclick="toggleMobileMenu()" aria-label="Abrir menú">☰</button>
+        </div>
+      </div>
+      
+      <div class="sidebar-content-wrapper" id="sidebar-content">
+        <div class="user-tag" id="display-user"></div>
+        <p style="font-size: 11px; font-weight: 800; color: #6A5ACD; text-transform: uppercase;" id="txt-menu-header">Menú Principal</p>
+        <ul class="nav-filters">
+          <li id="filter-todas" class="active" onclick="setFilter('todas')">📋 <span id="m-todas">Todas las tareas</span></li>
+          <li id="filter-urgentes" onclick="setFilter('urgentes')">🚨 <span id="m-urgentes">Urgentes</span></li>
+          <li id="filter-pendientes" onclick="setFilter('pendientes')">⏳ <span id="m-pendientes">Pendientes</span></li>
+          <li id="filter-concluidas" onclick="setFilter('concluidas')">✅ <span id="m-concluidas">Concluidas</span></li>
+          <li id="filter-habitos" onclick="setFilter('habitos')">📚 <span id="m-ingles">Inglés 🔥</span></li>
+          <li id="filter-calendario" onclick="setFilter('calendario')">📅 <span id="m-calendario">Calendario</span></li>
+          <li id="filter-notas" onclick="setFilter('notas')">📒 <span id="m-notas">Bloc de Notas</span></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-content" id="main-content-view">
+      <div class="form-card" id="create-form-card">
+        <h3 style="margin-top:0; color:var(--primary-color);" id="txt-form-title">Agregar Nueva Tarea</h3>
+        <div class="form-grid">
+          <div>
+            <label id="lbl-task-name">Nombre de la tarea</label>
+            <input type="text" id="task-input" placeholder="Ej. Entregar proyecto final...">
+          </div>
+          <div>
+            <label id="lbl-category">Tipo / Categoría</label>
+            <select id="category-input">
+              <option value="Escolar">🎓 Tareas Escolares</option>
+              <option value="Trabajo">💼 Trabajo</option>
+              <option value="Doméstica">🏠 Labores Domésticas</option>
+              <option value="Estudio Personal">📚 Estudio Personal</option>
+            </select>
+          </div>
+          <div class="full-width">
+            <label id="lbl-desc">Descripción detallada</label>
+            <textarea id="desc-input" placeholder="Escribe detalles sobre lo que hay que hacer..."></textarea>
+          </div>
+          <div>
+            <label id="lbl-date">Fecha de Caducación / Entrega</label>
+            <input type="date" id="date-input">
+          </div>
+          <div>
+            <label id="lbl-priority">Nivel de Urgencia</label>
+            <select id="priority-input">
+              <option value="urgente">🔴 Urgente (Punto Rojo)</option>
+              <option value="media">🟡 No tan urgente (Punto Amarillo)</option>
+              <option value="normal">⚪ Normal (Sin punto)</option>
+            </select>
+          </div>
+          
+          <div class="full-width">
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+              <input type="file" id="task-camera-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleTaskImageCapture(event)">
+              <button class="btn-action" onclick="document.getElementById('task-camera-file-input').click()" style="background:#483D8B; color:white; flex:0 0 auto;">📷 Cámara</button>
+              <button class="btn-add" onclick="addTask()" id="btn-save-task" style="margin-top:0; flex:1;">+ Guardar Tarea</button>
+            </div>
+            <input type="hidden" id="task-photo-input-val">
+            <div id="task-preview-photo-container" style="margin-top: 8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRA DE BÚSQUEDA RÁPIDA -->
+      <div class="search-bar-container" id="search-bar-box">
+        <input type="text" id="search-task-input" class="search-input" placeholder="🔍 Buscar tarea por nombre..." oninput="renderTasks()">
+      </div>
+
+      <h3 style="color:var(--primary-color);" id="section-title">Todas las Tareas</h3>
+      <div class="tasks-grid" id="tasks-container"></div>
+
+      <!-- SECCIÓN AJUSTES (SIN TÍTULO DUPLICADO EXTERIOR) -->
+      <div id="settings-section" class="hidden">
+        <div class="settings-card">
+          <h3 style="margin-top:0; color:var(--primary-color); display:flex; align-items:center; gap:8px;" id="st-title">⚙️ Ajustes de la Aplicación</h3>
+          <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+          
+          <div style="display:flex; flex-direction:column; gap:16px; max-width:320px;">
+            <div>
+              <label id="st-lbl-theme">Apariencia / Modo Visual</label>
+              <button class="btn-setting" onclick="toggleDarkMode()" id="btn-theme-toggle">🌓 Cambiar Modo Oscuro / Claro</button>
+            </div>
+            <div>
+              <label id="st-lbl-lang">Idioma de la aplicación</label>
+              <button class="btn-setting" onclick="toggleLanguage()" id="btn-lang-toggle">🌐 Idioma: Español</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 10px 0;">
+            <div>
+              <label>Gestión de Cuenta</label>
+              <button class="btn-setting" onclick="changeAccount()" style="background:#6A5ACD; margin-bottom:10px;">👤 Cambiar de Cuenta</button>
+              <button class="btn-logout" onclick="logout()" id="btn-logout-text" style="margin:0;">🚪 Cerrar Sesión</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN INGLÉS & HÁBITOS -->
+      <div id="habits-section" class="hidden">
+        <div class="today-summary-card">
+          <div class="today-summary-header" onclick="toggleTodayBreakdown()">
+            <div>
+              <h3 style="margin:0; color:var(--primary-color); font-size:16px;">⏱️ Tiempo Practicado Hoy</h3>
+              <div id="today-total-time" style="font-size:22px; font-weight:800; color:var(--primary-color); margin-top:4px;">0 min</div>
+            </div>
+            <span id="today-arrow-icon" style="font-size:18px; color:var(--primary-color);">▼</span>
+          </div>
+          <div id="today-breakdown-list" class="today-breakdown hidden"></div>
+        </div>
+
+        <div class="streaks-grid" id="streaks-container"></div>
+
+        <div class="stats-dashboard">
+          <h3 style="margin-top:0; color:var(--primary-color);" id="st-english-title">📊 Estadísticas de Estudio de Inglés</h3>
+          <div class="stats-grid">
+            <div class="stat-card"><h4 id="st-week-label">📅 Esta Semana</h4><span id="stat-week">0 min</span></div>
+            <div class="stat-card"><h4 id="st-month-label">🗓️ Este Mes</h4><span id="stat-month">0 min</span></div>
+            <div class="stat-card"><h4 id="st-year-label">🏆 Este Año</h4><span id="stat-year">0 min</span></div>
+            <div class="stat-card"><h4 id="st-topapp-label">🔥 App Principal</h4><span id="stat-top-app">Duolingo</span></div>
+          </div>
+        </div>
+
+        <div class="history-calendar-card">
+          <div class="history-card-header">
+            <h3 style="margin:0; color:var(--primary-color);" id="st-hist-title">🗓️ Historial de Días Estudiados</h3>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-icon-note" onclick="openHistoryEditModal()" title="Editar historial manual" style="font-size: 18px;">✏️</button>
+              <button class="btn-icon-note" onclick="deleteSpecificHistoryLog()" title="Eliminar fecha específica" style="font-size: 18px;">🗑️</button>
+            </div>
+          </div>
+          
+          <div class="calendar-controls" style="margin-top: 15px;">
+            <div>
+              <label>Mes:</label>
+              <select id="history-month" onchange="renderHistoryCalendar()">
+                <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option>
+                <option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option>
+                <option value="8">Septiembre</option><option value="9" selected>Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+              </select>
+            </div>
+            <div>
+              <label>Año:</label>
+              <select id="history-year" onchange="renderHistoryCalendar()">
+                <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
+                <option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="calendar-grid">
+            <div class="calendar-day-head">Dom</div><div class="calendar-day-head">Lun</div><div class="calendar-day-head">Mar</div>
+            <div class="calendar-day-head">Mié</div><div class="calendar-day-head">Jue</div><div class="calendar-day-head">Vie</div><div class="calendar-day-head">Sáb</div>
+          </div>
+          <div class="history-cal-grid" id="history-calendar-days"></div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN BLOC DE NOTAS -->
+      <div id="notes-section" class="hidden">
+        <div class="notepad-container">
+          <div class="notepad-editor">
+            <input type="hidden" id="note-edit-id">
+            <input type="hidden" id="note-is-hidden-val" value="false">
+            <input type="hidden" id="note-photo-input-val">
+            <label>Título de la nota</label>
+            <input type="text" id="note-title-input" placeholder="Ej. Apuntes o contraseñas...">
+            <br><br>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+              <label style="margin:0;">Color del texto:</label>
+              <input type="color" id="note-color-input" value="#374151" style="width: 50px; padding: 2px; height: 32px;">
+            </div>
+            <label>Contenido de la nota</label>
+            <textarea id="note-content-input" placeholder="Escribe libremente aquí..."></textarea>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px;">
+              <input type="file" id="camera-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleImageCapture(event)">
+              <button class="btn-action" onclick="document.getElementById('camera-file-input').click()" style="background:#483D8B; color:white; flex:0 0 auto;">📷 Cámara</button>
+              <button class="btn-add" onclick="saveNote()" style="margin-top:0; flex:1;" id="note-save-btn">+ Guardar Nota</button>
+            </div>
+            <div id="preview-photo-container" style="margin-top: 10px;"></div>
+          </div>
+          <div class="notepad-list" id="notepad-container"></div>
+        </div>
+      </div>
+
+      <!-- CALENDARIO DE TAREAS -->
+      <div id="calendar-view" class="calendar-container hidden">
+        <div class="history-card-header">
+          <h3 style="margin:0; color:var(--primary-color);">📅 Calendario de Tareas</h3>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-icon-note" onclick="openCalendarEditModal()" title="Agregar o editar evento rápido" style="font-size: 18px;">✏️</button>
+            <button class="btn-icon-note" onclick="deleteSpecificCalendarTask()" title="Eliminar fecha específica" style="font-size: 18px;">🗑️</button>
+          </div>
+        </div>
+        
+        <div class="calendar-controls" style="margin-top:15px;">
+          <div>
+            <label>Mes:</label>
+            <select id="cal-month" onchange="renderCalendar()">
+              <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option>
+              <option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option>
+              <option value="8">Septiembre</option><option value="9" selected>Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+            </select>
+          </div>
+          <div>
+            <label>Año:</label>
+            <select id="cal-year" onchange="renderCalendar()">
+              <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
+              <option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
+            </select>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid-days"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL EDITAR TAREA -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 style="margin-top:0; color:var(--primary-color);">Modificar Tarea</h3>
+      <input type="hidden" id="edit-id">
+      <input type="hidden" id="edit-photo-input-val">
+      <label>Nombre de la tarea</label>
+      <input type="text" id="edit-text">
+      <label style="margin-top:10px;">Categoría</label>
+      <select id="edit-category">
+        <option value="Escolar">🎓 Tareas Escolares</option>
+        <option value="Trabajo">💼 Trabajo</option>
+        <option value="Doméstica">🏠 Labores Domésticas</option>
+        <option value="Estudio Personal">📚 Estudio Personal</option>
+      </select>
+      <label style="margin-top:10px;">Descripción</label>
+      <textarea id="edit-desc"></textarea>
+      <label style="margin-top:10px;">Fecha de Caducación</label>
+      <input type="date" id="edit-date">
+      <label style="margin-top:10px;">Urgencia</label>
+      <select id="edit-priority">
+        <option value="urgente">🔴 Urgente (Punto Rojo)</option>
+        <option value="media">🟡 No tan urgente (Punto Amarillo)</option>
+        <option value="normal">⚪ Normal (Sin punto)</option>
+      </select>
+      
+      <div style="margin-top: 14px;">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="file" id="edit-camera-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleEditTaskImageCapture(event)">
+          <button class="btn-action" onclick="document.getElementById('edit-camera-file-input').click()" style="background:#483D8B; color:white; flex:0 0 auto;">📷 Cámara</button>
+          <button class="btn-add" onclick="saveEditedTask()" style="margin:0; flex:1;">Guardar Cambios</button>
+        </div>
+        <div id="edit-preview-photo-container" style="margin-top: 8px;"></div>
+      </div>
+      <button class="btn-logout" onclick="closeEditModal()" style="margin-top:10px;">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL NOTAS OCULTAS -->
+  <div id="hidden-notes-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="width: 450px; max-height: 80vh; overflow-y: auto;">
+      <h3 style="margin-top:0; color:var(--primary-color);">🔒 Notas Ocultas</h3>
+      <div id="hidden-notes-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
+      <button class="btn-logout" onclick="closeHiddenNotesModal()" style="margin:0;">Cerrar Panel</button>
+    </div>
+  </div>
+
+  <!-- MODAL PAPELERA DE NOTAS -->
+  <div id="trash-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="width: 450px; max-height: 80vh; overflow-y: auto;">
+      <h3 style="margin-top:0; color:var(--primary-color);">🗑️ Papelera de Notas</h3>
+      <p style="font-size: 13px; color: #64748B;">Aquí puedes recuperar notas eliminadas o borrarlas para siempre.</p>
+      <div id="trash-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
+      <button class="btn-logout" onclick="closeTrashModal()" style="margin:0;">Cerrar Papelera</button>
+    </div>
+  </div>
+
+  <!-- MODAL GALERÍA DE FOTOS DE LA APP -->
+  <div id="gallery-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="width: 520px; max-height: 85vh; overflow-y: auto;">
+      <h3 style="margin-top:0; color:var(--primary-color);">🖼️ Galería de Fotos Subidas</h3>
+      <p style="font-size: 13px; color: #64748B;">Todas las imágenes capturadas en tus notas y tareas.</p>
+      <div id="gallery-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;"></div>
+      <button class="btn-logout" onclick="closeGalleryModal()" style="margin:0;">Cerrar Galería</button>
+    </div>
+  </div>
+
+  <!-- VISOR DE IMAGEN EN GRANDE (LIGHTBOX CON ZOOM) -->
+  <div id="image-lightbox-modal" class="modal-overlay hidden" onclick="closeLightbox()">
+    <div style="position:relative; max-width:95%; max-height:95%; text-align:center;" onclick="event.stopPropagation()">
+      <button onclick="closeLightbox()" style="position:absolute; top:-15px; right:-15px; background:#EF4444; color:white; border:none; border-radius:50%; width:32px; height:32px; font-size:16px; cursor:pointer; z-index:10; box-shadow:0 4px 10px rgba(0,0,0,0.3);">×</button>
+      <img id="lightbox-img-element" style="max-width:100%; max-height:85vh; border-radius:12px; object-fit:contain; border:2px solid var(--border-color); background:#000; cursor:zoom-in; transition: transform 0.3s;" onclick="toggleImageZoom(this)" title="Clic para hacer zoom">
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let userWhatsapp = null;
+    let currentFilter = 'todas';
+    let currentLang = 'es';
+    let activeTimers = {};
+
+    const APPS_DATA = [
+      { name: 'Duolingo', url: 'https://www.duolingo.com', icon: 'img/duolingo.png' },
+      { name: 'Sounter', url: 'https://sounter.com', icon: 'img/sounter.png' },
+      { name: 'Cake', url: 'https://mycake.me', icon: 'img/cake.png' },
+      { name: 'ABA English', url: 'https://www.abaenglish.com', icon: 'img/aba.png' },
+      { name: 'Busuu', url: 'https://www.busuu.com', icon: 'img/busuu.png' },
+      { name: 'Babbel', url: 'https://www.babbel.com', icon: 'img/babbel.png' },
+      { name: 'Memrise', url: 'https://www.memrise.com', icon: 'img/memrise.png' },
+      { name: 'Drops', url: 'https://languagedrops.com', icon: 'img/drops.png' }
+    ];
+
+    window.onload = function() {
+      const savedUser = localStorage.getItem('app_current_user');
+      const savedWa = localStorage.getItem('app_user_wa');
+      const savedTheme = localStorage.getItem('app_dark_mode');
+      const savedLang = localStorage.getItem('app_lang');
+
+      if (savedTheme === 'true') {
+        document.body.classList.add('dark-mode');
+      }
+      if (savedLang) {
+        currentLang = savedLang;
+      }
+      
+      applyLanguageUI();
+
+      if (savedUser) {
+        currentUser = savedUser;
+        userWhatsapp = savedWa || '';
+        showApp();
+      }
+    };
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('app_dark_mode', isDark);
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'es' ? 'en' : 'es';
+      localStorage.setItem('app_lang', currentLang);
+      applyLanguageUI();
+    }
+
+    function applyLanguageUI() {
+      const isEn = currentLang === 'en';
+      document.getElementById('btn-lang-toggle').innerText = isEn ? '🌐 Language: English' : '🌐 Idioma: Español';
+      document.getElementById('m-todas').innerText = isEn ? 'All Tasks' : 'Todas las tareas';
+      document.getElementById('m-urgentes').innerText = isEn ? 'Urgent' : 'Urgentes';
+      document.getElementById('m-pendientes').innerText = isEn ? 'Pending' : 'Pendientes';
+      document.getElementById('m-concluidas').innerText = isEn ? 'Completed' : 'Concluidas';
+      document.getElementById('m-ingles').innerText = isEn ? 'English 🔥' : 'Inglés 🔥';
+      document.getElementById('m-calendario').innerText = isEn ? 'Calendar' : 'Calendario';
+      document.getElementById('m-notas').innerText = isEn ? 'Notepad' : 'Bloc de Notas';
+      document.getElementById('btn-logout-text').innerText = isEn ? 'Log Out' : 'Cerrar Sesión';
+      document.getElementById('txt-form-title').innerText = isEn ? 'Add New Task' : 'Agregar Nueva Tarea';
+      document.getElementById('btn-save-task').innerText = isEn ? '+ Save Task' : '+ Guardar Tarea';
+      document.getElementById('st-title').innerHTML = isEn ? '⚙️ App Settings' : '⚙️ Ajustes de la Aplicación';
+    }
+
+    function toggleMobileMenu() {
+      const content = document.getElementById('sidebar-content');
+      if (content) {
+        content.classList.toggle('active');
+      }
+    }
+
+    function toggleNotesMenu(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('notes-dropdown-menu');
+      if (menu) menu.classList.toggle('active');
+    }
+
+    window.onclick = function() {
+      const menu = document.getElementById('notes-dropdown-menu');
+      if (menu) menu.classList.remove('active');
+    }
+
+    function login() {
+      const email = document.getElementById('email-input').value;
+      const whatsapp = document.getElementById('whatsapp-input').value;
+      if (!email || !email.includes('@gmail.com')) { alert('Ingresa un correo de Gmail válido.'); return; }
+      currentUser = email; userWhatsapp = whatsapp;
+      localStorage.setItem('app_current_user', currentUser);
+      localStorage.setItem('app_user_wa', userWhatsapp);
+      showApp();
+    }
+
+    function changeAccount() {
+      const email = prompt("Ingresa tu nuevo correo de Gmail:", "");
+      const whatsapp = prompt("Ingresa tu número de WhatsApp:", "");
+      if (email && email.includes('@gmail.com')) {
+        currentUser = email;
+        userWhatsapp = whatsapp || '';
+        localStorage.setItem('app_current_user', currentUser);
+        localStorage.setItem('app_user_wa', userWhatsapp);
+        showApp();
+        alert("¡Cuenta cambiada exitosamente!");
+      } else if (email !== null) {
+        alert("Correo de Gmail no válido.");
+      }
+    }
+
+    function showApp() {
+      document.getElementById('display-user').innerText = `👤 ${currentUser}`;
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('todo-section').classList.remove('hidden');
+      initStreaksIfNeeded();
+      loadTasks();
+      loadStreaks();
+      checkTaskAlerts();
+    }
+
+    function logout() {
+      localStorage.clear();
+      location.reload();
+    }
+
+    function getTasks() { return JSON.parse(localStorage.getItem('tasks_' + currentUser) || '[]'); }
+    function saveTasks(tasks) { localStorage.setItem('tasks_' + currentUser, JSON.stringify(tasks)); }
+    function getStreaks() { return JSON.parse(localStorage.getItem('streaks_' + currentUser) || '[]'); }
+    function saveStreaks(streaks) { localStorage.setItem('streaks_' + currentUser, JSON.stringify(streaks)); }
+    function getStudyLogs() { return JSON.parse(localStorage.getItem('logs_' + currentUser) || '[]'); }
+    function saveStudyLogs(logs) { localStorage.setItem('logs_' + currentUser, JSON.stringify(logs)); }
+    function getNotes() { return JSON.parse(localStorage.getItem('notepad_' + currentUser) || '[]'); }
+    function saveNotes(notes) { localStorage.setItem('notepad_' + currentUser, JSON.stringify(notes)); }
+    function getHiddenNotes() { return JSON.parse(localStorage.getItem('hidden_notepad_' + currentUser) || '[]'); }
+    function saveHiddenNotes(notes) { localStorage.setItem('hidden_notepad_' + currentUser, JSON.stringify(notes)); }
+    function getTrashNotes() { return JSON.parse(localStorage.getItem('trash_notepad_' + currentUser) || '[]'); }
+    function saveTrashNotes(notes) { localStorage.setItem('trash_notepad_' + currentUser, JSON.stringify(notes)); }
+
+    function initStreaksIfNeeded() {
+      let streaks = getStreaks();
+      if (!streaks || streaks.length === 0) {
+        streaks = APPS_DATA.map(app => ({ appName: app.name, streakCount: app.name === 'Duolingo' ? 209 : 0, lastPracticedDate: '', timeSpentSeconds: 0 }));
+        saveStreaks(streaks);
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.nav-filters li').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById(`filter-${filter}`);
+      if (activeEl) activeEl.classList.add('active');
+
+      document.getElementById('create-form-card').classList.add('hidden');
+      document.getElementById('search-bar-box').classList.add('hidden');
+      document.getElementById('tasks-container').classList.add('hidden');
+      document.getElementById('habits-section').classList.add('hidden');
+      document.getElementById('calendar-view').classList.add('hidden');
+      document.getElementById('notes-section').classList.add('hidden');
+      document.getElementById('settings-section').classList.add('hidden');
+      document.getElementById('notes-dropdown-container').classList.add('hidden');
+
+      if (filter === 'habitos') {
+        document.getElementById('section-title').innerText = currentLang === 'en' ? "📚 English" : "📚 Inglés";
+        document.getElementById('habits-section').classList.remove('hidden');
+        loadStreaks();
+      } else if (filter === 'calendario') {
+        document.getElementById('section-title').innerText = currentLang === 'en' ? "📅 Calendar" : "📅 Calendario";
+        document.getElementById('calendar-view').classList.remove('hidden');
+        renderCalendar();
+      } else if (filter === 'notas') {
+        document.getElementById('section-title').innerText = currentLang === 'en' ? "📒 Notepad" : "📒 Bloc de Notas";
+        document.getElementById('notes-section').classList.remove('hidden');
+        document.getElementById('notes-dropdown-container').classList.remove('hidden');
+        renderNotes();
+      } else if (filter === 'ajustes') {
+        document.getElementById('section-title').innerText = "";
+        document.getElementById('settings-section').classList.remove('hidden');
+      } else {
+        if (filter !== 'concluidas') document.getElementById('create-form-card').classList.remove('hidden');
+        document.getElementById('search-bar-box').classList.remove('hidden');
+        document.getElementById('tasks-container').classList.remove('hidden');
+        renderTasks();
+      }
+
+      const content = document.getElementById('sidebar-content');
+      if (content) content.classList.remove('active');
+      document.getElementById('main-content-view').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('tasks-container');
+      container.innerHTML = '';
+      let tasks = getTasks();
+      let searchKeyword = document.getElementById('search-task-input').value.toLowerCase();
+      let titlesMap = { 'todas': 'Todas las Tareas', 'urgentes': 'Tareas Urgentes 🔴', 'pendientes': 'Tareas Pendientes ⏳', 'concluidas': 'Tareas Concluidas ✅' };
+      document.getElementById('section-title').innerText = titlesMap[currentFilter] || 'Tareas';
+
+      let filtered = tasks.filter(t => {
+        let matchesFilter = true;
+        if (currentFilter === 'urgentes') matchesFilter = (t.priority === 'urgente' && !t.completed);
+        else if (currentFilter === 'pendientes') matchesFilter = !t.completed;
+        else if (currentFilter === 'concluidas') matchesFilter = t.completed;
+
+        let matchesSearch = t.text.toLowerCase().includes(searchKeyword) || (t.description && t.description.toLowerCase().includes(searchKeyword));
+        return matchesFilter && matchesSearch;
+      });
+
+      const pOrder = { 'urgente': 1, 'media': 2, 'normal': 3 };
+      filtered.sort((a, b) => pOrder[a.priority] - pOrder[b.priority]);
+
+      if (filtered.length === 0) { container.innerHTML = '<p style="color:#5A5A8A; font-weight:700;">No hay tareas en esta sección.</p>'; return; }
+
+      filtered.forEach((task, idx) => {
+        const colorClass = `pastel-${idx % 5}`;
+        const dot = task.priority === 'urgente' ? '<span class="dot dot-urgente"></span>' : (task.priority === 'media' ? '<span class="dot dot-media"></span>' : '');
+        
+        const waMsg = `✨ ━━━━━━━━━━━━━━━━━━━━━━\n¡Hola! 😊 Te aviso que falta por entregar:\n${task.text} — ${task.category}\n\n📅 Fecha límite:\n${task.dueDate || 'Sin fecha'}\n━━━━━━━━━━━━━━━━━━━━━━ ✨`;
+        const waText = encodeURIComponent(waMsg);
+        const waLink = userWhatsapp ? `https://api.whatsapp.com/send?phone=${userWhatsapp}&text=${waText}` : '#';
+
+        const recordBtnHTML = currentFilter !== 'concluidas' ? `<a href="${waLink}" target="_blank" class="btn-wa" onclick="${!userWhatsapp ? "alert('Configura tu WhatsApp al iniciar.'); return false;" : ""}">💬 Recordar</a>` : '';
+        const photoHTML = task.photo ? `<div style="margin-top:8px;"><img src="${task.photo}" onclick="openLightbox('${task.photo}')" style="max-width:120px; max-height:120px; border-radius:8px; object-fit:cover; border:1px solid var(--border-color); cursor:pointer;" title="Clic para ampliar"></div>` : '';
+
+        container.innerHTML += `
+          <div class="task-card ${colorClass} ${task.completed ? 'completed' : ''}">
+            <div class="btn-edit-pencil" onclick="openEditModal('${task.id}')" title="Modificar Tarea">✏️</div>
+            <div>
+              <div class="task-header"><span class="badge-category">${task.category}</span><div>${dot}</div></div>
+              <div class="task-title">${task.text}</div>
+              <div class="task-desc">${task.description || 'Sin descripción.'}</div>
+              ${photoHTML}
+              <div class="task-meta">📅 Entrega: ${task.dueDate || 'Sin fecha'}</div>
+            </div>
+            <div class="task-actions">
+              <button class="btn-action btn-check" onclick="toggleTask('${task.id}')">${task.completed ? '↩ Deshacer' : '✔ Concluir'}</button>
+              ${recordBtnHTML}
+              <button class="btn-action btn-delete" onclick="deleteTask('${task.id}')">🗑 Borrar</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function loadStreaks() { renderStreaks(); updateTodaySummary(); updateAdvancedStats(); renderHistoryCalendar(); }
+
+    function updateTodaySummary() {
+      const today = new Date().toISOString().split('T')[0];
+      let logs = getStudyLogs().filter(l => l.date === today);
+      let totalSeconds = logs.reduce((acc, l) => acc + (l.seconds || 0), 0);
+      let totalMins = Math.floor(totalSeconds / 60);
+
+      document.getElementById('today-total-time').innerText = `${totalMins} min`;
+
+      const listContainer = document.getElementById('today-breakdown-list');
+      listContainer.innerHTML = '';
+
+      if (logs.length === 0) {
+        listContainer.innerHTML = '<div style="font-size:12px; color:#64748B;">Aún no has registrado tiempo hoy.</div>';
+        return;
+      }
+
+      logs.forEach(l => {
+        let appMins = Math.floor(l.seconds / 60);
+        let appSecs = l.seconds % 60;
+        const app = APPS_DATA.find(a => a.name === l.appName);
+        const iconSrc = app ? app.icon : '';
+
+        listContainer.innerHTML += `
+          <div class="today-app-item">
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${iconSrc ? `<img src="${iconSrc}" style="width:18px; height:18px; object-fit:contain;">` : ''}
+              <span>${l.appName}</span>
+            </div>
+            <span>${appMins}m ${appSecs}s</span>
+          </div>
+        `;
+      });
+    }
+
+    function toggleTodayBreakdown() {
+      const list = document.getElementById('today-breakdown-list');
+      const arrow = document.getElementById('today-arrow-icon');
+      if (list) {
+        list.classList.toggle('hidden');
+        arrow.innerText = list.classList.contains('hidden') ? '▼' : '▲';
+      }
+    }
+
+    function renderStreaks() {
+      const container = document.getElementById('streaks-container');
+      container.innerHTML = '';
+      let streaks = getStreaks();
+      const today = new Date().toISOString().split('T')[0];
+
+      streaks.forEach(s => {
+        const appInfo = APPS_DATA.find(a => a.name === s.appName) || { url: '#', icon: '' };
+        const practicedToday = s.lastPracticedDate === today;
+        const seconds = s.timeSpentSeconds || 0;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const isTimerRunning = !!activeTimers[s.appName];
+
+        container.innerHTML += `
+          <div class="streak-card">
+            <div>
+              <a href="${appInfo.url}" target="_blank" class="app-header-link">
+                <div class="app-icon-wrapper"><img src="${appInfo.icon}" class="app-icon"></div>
+                <span>${s.appName}</span>
+              </a>
+              <div class="streak-flame-btn" onclick="setManualStreak('${s.appName}', ${s.streakCount})" title="Modificar racha">
+                🔥 <span>${s.streakCount}</span>
+              </div>
+              <div>${practicedToday ? '<span class="safe-badge">✅ Completado</span>' : '<span class="risk-badge">⚠️ En Riesgo</span>'}</div>
+              <div class="timer-display" id="timer-box-${s.appName}" onclick="editManualTime('${s.appName}')" title="Clic para editar tiempo">${mins}m ${secs}s ⏱️</div>
+            </div>
+
+            <div style="width:100%;">
+              <div style="display:flex; gap:6px; margin-bottom:6px;">
+                ${!isTimerRunning ? 
+                  `<button class="btn-action" style="background:#10B981; color:white; flex:1;" onclick="startTimer('${s.appName}')">▶️ Iniciar</button>` :
+                  `<button class="btn-action" style="background:#EF4444; color:white; flex:1;" onclick="stopTimer('${s.appName}')">⏹️ Detener</button>`
+                }
+              </div>
+              <button class="btn-practice" onclick="markPracticed('${s.appName}')">${practicedToday ? '🔄 Deshacer Práctica' : '¡Ya practiqué! 🎉'}</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function startTimer(appName) {
+      if (activeTimers[appName]) return;
+      activeTimers[appName] = setInterval(() => {
+        let streaks = getStreaks();
+        const today = new Date().toISOString().split('T')[0];
+        streaks = streaks.map(s => {
+          if (s.appName === appName) {
+            s.timeSpentSeconds = (s.timeSpentSeconds || 0) + 1;
+            s.lastPracticedDate = today;
+          }
+          return s;
+        });
+        saveStreaks(streaks);
+        addOrUpdateStudyLog(appName, 1, today);
+        updateAppTimerDisplayLive(appName);
+        updateTodaySummary();
+        updateAdvancedStats();
+        renderHistoryCalendar();
+      }, 1000);
+      renderStreaks();
+    }
+
+    function stopTimer(appName) {
+      if (activeTimers[appName]) {
+        clearInterval(activeTimers[appName]);
+        delete activeTimers[appName];
+        renderStreaks();
+      }
+    }
+
+    function updateAppTimerDisplayLive(appName) {
+      let streaks = getStreaks();
+      const s = streaks.find(item => item.appName === appName);
+      if (s) {
+        const seconds = s.timeSpentSeconds || 0;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const timerBox = document.getElementById(`timer-box-${appName}`);
+        if (timerBox) {
+          timerBox.innerHTML = `${mins}m ${secs}s ⏱️`;
+        }
+      }
+    }
+
+    function editManualTime(appName) {
+      let streaks = getStreaks();
+      const s = streaks.find(item => item.appName === appName);
+      const currentMins = Math.floor((s.timeSpentSeconds || 0) / 60);
+      const newMins = prompt(`Ingresa los minutos totales estudiados hoy en ${appName}:`, currentMins);
+      if (newMins !== null && !isNaN(newMins)) {
+        const newSecs = parseInt(newMins) * 60;
+        const today = new Date().toISOString().split('T')[0];
+        const diffSecs = newSecs - (s.timeSpentSeconds || 0);
+
+        streaks = streaks.map(item => {
+          if (item.appName === appName) {
+            item.timeSpentSeconds = newSecs;
+            if (newSecs > 0) item.lastPracticedDate = today;
+            else item.lastPracticedDate = '';
+          }
+          return item;
+        });
+        saveStreaks(streaks);
+        addOrUpdateStudyLog(appName, diffSecs, today);
+        loadStreaks();
+      }
+    }
+
+    function setManualStreak(appName, currentCount) {
+      const newCount = prompt(`Ingresa el número de días de racha que llevas en ${appName}:`, currentCount);
+      if (newCount !== null && !isNaN(newCount)) {
+        let streaks = getStreaks();
+        streaks = streaks.map(s => {
+          if (s.appName === appName) s.streakCount = parseInt(newCount) || 0;
+          return s;
+        });
+        saveStreaks(streaks);
+        loadStreaks();
+      }
+    }
+
+    function markPracticed(appName) {
+      let streaks = getStreaks();
+      const today = new Date().toISOString().split('T')[0];
+      streaks = streaks.map(s => {
+        if (s.appName === appName) {
+          if (s.lastPracticedDate === today) {
+            s.streakCount = Math.max(0, s.streakCount - 1);
+            s.lastPracticedDate = '';
+            s.timeSpentSeconds = Math.max(0, (s.timeSpentSeconds || 0) - 300);
+            
+            let logs = getStudyLogs().filter(l => !(l.date === today && l.appName === appName));
+            saveStudyLogs(logs);
+          } else {
+            s.streakCount += 1;
+            s.lastPracticedDate = today;
+            s.timeSpentSeconds = (s.timeSpentSeconds || 0) + 300;
+            addOrUpdateStudyLog(appName, 300, today);
+          }
+        }
+        return s;
+      });
+      saveStreaks(streaks);
+      loadStreaks();
+    }
+
+    function addOrUpdateStudyLog(appName, secondsChange, dateStr) {
+      let logs = getStudyLogs();
+      let existing = logs.find(l => l.date === dateStr && l.appName === appName);
+      if (existing) {
+        existing.seconds = Math.max(0, existing.seconds + secondsChange);
+      } else if (secondsChange > 0) {
+        logs.push({ date: dateStr, appName: appName, seconds: secondsChange });
+      }
+      logs = logs.filter(l => l.seconds > 0);
+      saveStudyLogs(logs);
+    }
+
+    function updateAdvancedStats() {
+      let logs = getStudyLogs();
+      const now = new Date();
+      const currentYear = now.getFullYear().toString();
+      let yearSecs = 0;
+      let appUsageCount = {};
+
+      logs.forEach(l => {
+        const lDate = new Date(l.date + 'T00:00:00');
+        if (lDate.getFullYear().toString() === currentYear && l.seconds > 0) {
+          yearSecs += l.seconds;
+          appUsageCount[l.appName] = (appUsageCount[l.appName] || 0) + l.seconds;
+        }
+      });
+
+      document.getElementById('stat-week').innerText = `${Math.floor(yearSecs / 60)} min`;
+      document.getElementById('stat-month').innerText = `${Math.floor(yearSecs / 60)} min`;
+      document.getElementById('stat-year').innerText = `${Math.floor(yearSecs / 3600)} hrs`;
+
+      let topApp = "Duolingo";
+      let maxSecs = 0;
+      for (let app in appUsageCount) {
+        if (appUsageCount[app] > maxSecs) { maxSecs = appUsageCount[app]; topApp = app; }
+      }
+      document.getElementById('stat-top-app').innerText = topApp;
+    }
+
+    function renderHistoryCalendar() {
+      const grid = document.getElementById('history-calendar-days');
+      if (!grid) return;
+      grid.innerHTML = '';
+      const month = parseInt(document.getElementById('history-month').value);
+      const year = parseInt(document.getElementById('history-year').value);
+      const firstDay = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      let logs = getStudyLogs();
+
+      for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="history-day-cell" style="background:transparent; border:none; cursor:default;"></div>`; }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const mStr = (month + 1) < 10 ? `0${month + 1}` : `${month + 1}`;
+        const dStr = day < 10 ? `0${day}` : `${day}`;
+        const targetDate = `${year}-${mStr}-${dStr}`;
+
+        const dayLogs = logs.filter(l => l.date === targetDate && l.seconds > 0);
+        let iconsHTML = '';
+        dayLogs.forEach(l => {
+          const app = APPS_DATA.find(a => a.name === l.appName);
+          if (app) iconsHTML += `<img src="${app.icon}" class="history-mini-icon" title="${l.appName}: ${Math.floor(l.seconds/60)}m">`;
+        });
+
+        grid.innerHTML += `
+          <div class="history-day-cell ${dayLogs.length > 0 ? 'studied' : ''}" onclick="onHistoryDayClick('${targetDate}')" title="Clic para gestionar este día">
+            <span>${day}</span>
+            <div class="history-icons-container">${iconsHTML}</div>
+          </div>
+        `;
+      }
+    }
+
+    function onHistoryDayClick(dateStr) {
+      let logs = getStudyLogs();
+      let action = prompt(`Día seleccionado: ${dateStr}\n¿Qué deseas hacer?\n1. Escribe la app para editar sus minutos.\n2. Escribe "borrar" para eliminar esta fecha.`);
+      if (!action) return;
+      if (action.toLowerCase() === 'borrar') {
+        logs = logs.filter(l => l.date !== dateStr);
+        saveStudyLogs(logs);
+        loadStreaks();
+        alert(`¡Registros del día ${dateStr} eliminados!`);
+      } else {
+        let appName = action;
+        let foundApp = APPS_DATA.find(a => a.name.toLowerCase() === appName.toLowerCase());
+        if (foundApp) {
+          let mins = prompt(`Minutos de estudio para ${foundApp.name} el ${dateStr}:`, "15");
+          if (mins !== null && !isNaN(mins)) {
+            let newSecs = parseInt(mins) * 60;
+            logs = logs.filter(l => !(l.date === dateStr && l.appName.toLowerCase() === foundApp.name.toLowerCase()));
+            if (newSecs > 0) {
+              logs.push({ date: dateStr, appName: foundApp.name, seconds: newSecs });
+            }
+            saveStudyLogs(logs);
+            loadStreaks();
+            alert("¡Actualizado!");
+          }
+        } else {
+          alert("Aplicación no encontrada.");
+        }
+      }
+    }
+
+    function openHistoryEditModal() {
+      const dateInput = prompt("Ingresa la fecha (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+      if (!dateInput) return;
+      const appInput = prompt("Ingresa el nombre exacto de la app:", "Duolingo");
+      if (!appInput) return;
+      const minsInput = prompt("Ingresa los minutos estudiados (0 para borrar):", "15");
+      if (minsInput !== null && !isNaN(minsInput)) {
+        const newSecs = parseInt(minsInput) * 60;
+        let logs = getStudyLogs();
+        logs = logs.filter(l => !(l.date === dateInput && l.appName === appInput));
+        if (newSecs > 0) {
+          logs.push({ date: dateInput, appName: appInput, seconds: newSecs });
+        }
+        saveStudyLogs(logs);
+        loadStreaks();
+        alert("¡Historial actualizado!");
+      }
+    }
+
+    function deleteSpecificHistoryLog() {
+      let logs = getStudyLogs();
+      let uniqueDates = [...new Set(logs.map(l => l.date))];
+      if (uniqueDates.length === 0) { alert("No hay fechas en el historial."); return; }
+      let dateStr = prompt(`Ingresa la fecha a ELIMINAR (YYYY-MM-DD):\nFechas: ${uniqueDates.join(', ')}`);
+      if (dateStr) {
+        logs = logs.filter(l => l.date !== dateStr);
+        saveStudyLogs(logs);
+        loadStreaks();
+        alert(`¡Registros de ${dateStr} eliminados!`);
+      }
+    }
+
+    function openCalendarEditModal() {
+      const taskName = prompt("Ingresa el nombre de la tarea para el calendario:");
+      if (!taskName) return;
+      const taskDate = prompt("Ingresa la fecha (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+      if (!taskDate) return;
+      
+      let tasks = getTasks();
+      tasks.push({ id: Date.now().toString(), text: taskName, category: 'Escolar', description: 'Agregado desde calendario', dueDate: taskDate, priority: 'normal', completed: false });
+      saveTasks(tasks);
+      renderCalendar();
+      alert("¡Tarea agregada!");
+    }
+
+    function deleteSpecificCalendarTask() {
+      let tasks = getTasks();
+      let datesWithTasks = [...new Set(tasks.filter(t => t.dueDate).map(t => t.dueDate))];
+      if (datesWithTasks.length === 0) { alert("No hay tareas en el calendario."); return; }
+
+      let dateStr = prompt(`Ingresa la fecha a limpiar (YYYY-MM-DD):\nFechas: ${datesWithTasks.join(', ')}`);
+      if (dateStr) {
+        tasks = tasks.map(t => {
+          if (t.dueDate === dateStr) t.dueDate = '';
+          return t;
+        });
+        saveTasks(tasks);
+        renderCalendar();
+        alert(`¡Tareas de ${dateStr} removidas del calendario!`);
+      }
+    }
+
+    function handleTaskImageCapture(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Img = e.target.result;
+          document.getElementById('task-photo-input-val').value = base64Img;
+          document.getElementById('task-preview-photo-container').innerHTML = `
+            <div style="position:relative; display:inline-block;">
+              <img src="${base64Img}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+              <button onclick="removeTaskCapturedPhoto()" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+            </div>
+          `;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removeTaskCapturedPhoto() {
+      document.getElementById('task-photo-input-val').value = '';
+      document.getElementById('task-preview-photo-container').innerHTML = '';
+      document.getElementById('task-camera-file-input').value = '';
+    }
+
+    function handleEditTaskImageCapture(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Img = e.target.result;
+          document.getElementById('edit-photo-input-val').value = base64Img;
+          document.getElementById('edit-preview-photo-container').innerHTML = `
+            <div style="position:relative; display:inline-block;">
+              <img src="${base64Img}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+              <button onclick="document.getElementById('edit-photo-input-val').value=''; document.getElementById('edit-preview-photo-container').innerHTML='';" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+            </div>
+          `;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleImageCapture(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Img = e.target.result;
+          document.getElementById('note-photo-input-val').value = base64Img;
+          document.getElementById('preview-photo-container').innerHTML = `
+            <div style="position:relative; display:inline-block; margin-top:6px;">
+              <img src="${base64Img}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+              <button onclick="removeCapturedPhoto()" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+            </div>
+          `;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removeCapturedPhoto() {
+      document.getElementById('note-photo-input-val').value = '';
+      document.getElementById('preview-photo-container').innerHTML = '';
+      document.getElementById('camera-file-input').value = '';
+    }
+
+    function openLightbox(imgSrc) {
+      const imgEl = document.getElementById('lightbox-img-element');
+      imgEl.style.transform = 'scale(1)';
+      imgEl.src = imgSrc;
+      document.getElementById('image-lightbox-modal').classList.remove('hidden');
+    }
+
+    function closeLightbox() {
+      document.getElementById('image-lightbox-modal').classList.add('hidden');
+    }
+
+    function toggleImageZoom(imgElement) {
+      if (imgElement.style.transform === 'scale(1.7)') {
+        imgElement.style.transform = 'scale(1)';
+        imgElement.style.cursor = 'zoom-in';
+      } else {
+        imgElement.style.transform = 'scale(1.7)';
+        imgElement.style.cursor = 'zoom-out';
+      }
+    }
+
+    function saveNote() {
+      const id = document.getElementById('note-edit-id').value;
+      const isHidden = document.getElementById('note-is-hidden-val').value === 'true';
+      const title = document.getElementById('note-title-input').value;
+      const content = document.getElementById('note-content-input').value;
+      const color = document.getElementById('note-color-input').value;
+      const photo = document.getElementById('note-photo-input-val').value;
+      
+      if (!title || !content) { alert('Escribe título y contenido.'); return; }
+
+      const nowStr = new Date().toLocaleString();
+
+      if (isHidden) {
+        let hidden = getHiddenNotes();
+        if (id) {
+          hidden = hidden.map(n => n.id === id ? { ...n, title, content, color, photo: photo || n.photo } : n);
+        } else {
+          hidden.push({ id: Date.now().toString(), title, content, color, photo, date: nowStr });
+        }
+        saveHiddenNotes(hidden);
+        clearNoteEditor();
+        openHiddenNotesMenu();
+      } else {
+        let notes = getNotes();
+        if (id) {
+          notes = notes.map(n => n.id === id ? { ...n, title, content, color, photo: photo || n.photo } : n);
+        } else {
+          notes.push({ id: Date.now().toString(), title, content, color, photo, date: nowStr });
+        }
+        saveNotes(notes);
+        clearNoteEditor();
+        renderNotes();
+      }
+    }
+
+    function clearNoteEditor() {
+      document.getElementById('note-edit-id').value = '';
+      document.getElementById('note-is-hidden-val').value = 'false';
+      document.getElementById('note-title-input').value = '';
+      document.getElementById('note-content-input').value = '';
+      document.getElementById('note-photo-input-val').value = '';
+      document.getElementById('preview-photo-container').innerHTML = '';
+      document.getElementById('camera-file-input').value = '';
+      document.getElementById('note-save-btn').innerText = '+ Guardar Nota';
+    }
+
+    function renderNotes() {
+      const container = document.getElementById('notepad-container');
+      container.innerHTML = '';
+      let notes = getNotes();
+      if (notes.length === 0) { container.innerHTML = '<p style="color:#5A5A8A;">Tu bloc de notas está vacío.</p>'; return; }
+
+      notes.forEach(n => {
+        const waMsg = `✨ ━━━━━━━━━━━━━━━━━━━━━━\n¡Hola! 😊 Te comparto la nota:\n${n.title}\n\n📄 Contenido:\n${n.content}\n━━━━━━━━━━━━━━━━━━━━━━ ✨`;
+        const waText = encodeURIComponent(waMsg);
+        const waLink = userWhatsapp ? `https://api.whatsapp.com/send?phone=${userWhatsapp}&text=${waText}` : '#';
+        const photoHTML = n.photo ? `<div style="margin-top:8px;"><img src="${n.photo}" onclick="openLightbox('${n.photo}')" style="max-width:120px; max-height:120px; border-radius:8px; object-fit:cover; border:1px solid var(--border-color); cursor:pointer;" title="Clic para ampliar"></div>` : '';
+
+        container.innerHTML += `
+          <div class="notepad-item">
+            <span class="note-date-tag">📅 ${n.date || 'Reciente'}</span>
+            <div class="note-top-actions">
+              <a href="${waLink}" target="_blank" class="btn-icon-note" title="Recordar por WhatsApp" onclick="${!userWhatsapp ? "alert('Configura tu WhatsApp al iniciar.'); return false;" : ""}">💬</a>
+              <button class="btn-icon-note" onclick="hideNote('${n.id}')" title="Ocultar esta nota">🔒</button>
+              <button class="btn-icon-note" onclick="editNote('${n.id}')" title="Editar nota">✏️</button>
+              <button class="btn-icon-note" onclick="deleteNote('${n.id}')" title="Enviar a papelera">🗑️</button>
+            </div>
+            <h4 style="color:${n.color || '#374151'}; font-size:16px; margin: 4px 0;">📌 ${n.title}</h4>
+            <p style="color:${n.color || '#4B5563'}; font-size:14px; margin:0; white-space:pre-wrap;">${n.content}</p>
+            ${photoHTML}
+          </div>
+        `;
+      });
+    }
+
+    function hideNote(id) {
+      if (confirm("¿Deseas mover esta nota a Notas Ocultas?")) {
+        let notes = getNotes();
+        let hidden = getHiddenNotes();
+        const noteToHide = notes.find(n => n.id === id);
+        if (noteToHide) {
+          hidden.push(noteToHide);
+          saveHiddenNotes(hidden);
+          saveNotes(notes.filter(n => n.id !== id));
+          renderNotes();
+          alert("¡Nota movida a 'Notas ocultas'!");
+        }
+      }
+    }
+
+    function openHiddenNotesMenu() {
+      let savedPass = localStorage.getItem('app_hidden_pass_' + currentUser);
+      if (!savedPass) {
+        let newPass = prompt("Crea una contraseña para tu sección de Notas Ocultas:");
+        if (newPass) {
+          localStorage.setItem('app_hidden_pass_' + currentUser, newPass);
+          alert("¡Contraseña guardada!");
+          showHiddenNotesModal();
+        }
+      } else {
+        let enterPass = prompt("Ingresa tu contraseña de Notas Ocultas (Escribe 'olvide' si no la recuerdas):");
+        if (enterPass === 'olvide' || enterPass === 'Olvide') {
+          let emailCheck = prompt("🔐 VERIFICACIÓN DE SEGURIDAD:\nIngresa tu correo registrado para enviarte un código de confirmación de identidad:");
+          if (emailCheck && emailCheck.trim().toLowerCase() === currentUser.toLowerCase()) {
+            let verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+            alert(`✉️ CÓDIGO DE CONFIRMACIÓN DE SEGURIDAD\n\nEnviado a: ${currentUser}\n\nTu código de verificación de 6 dígitos es: [ ${verificationCode} ]\n\n(Ingresa este código a continuación para validar que eres tú y cambiar tu contraseña)`);
+            let codeEntered = prompt(`Ingresa el código de 6 dígitos enviado a tu correo (${currentUser}):`);
+            if (codeEntered && codeEntered.trim() === verificationCode) {
+              let brandNewPass = prompt("✅ ¡Identidad confirmada exitosamente!\n\nIngresa tu NUEVA contraseña para la sección de Notas Ocultas:");
+              if (brandNewPass) {
+                localStorage.setItem('app_hidden_pass_' + currentUser, brandNewPass);
+                alert("¡Tu contraseña ha sido restablecida con éxito!");
+                showHiddenNotesModal();
+              }
+            } else {
+              alert("❌ Código de verificación incorrecto. Acceso denegado por seguridad.");
+            }
+          } else {
+            alert("❌ El correo ingresado no coincide con el usuario activo.");
+          }
+        } else if (enterPass === savedPass) {
+          showHiddenNotesModal();
+        } else if (enterPass !== null) {
+          alert("❌ Contraseña incorrecta.");
+        }
+      }
+    }
+
+    function showHiddenNotesModal() {
+      document.getElementById('hidden-notes-modal').classList.remove('hidden');
+      renderHiddenNotes();
+    }
+
+    function closeHiddenNotesModal() {
+      document.getElementById('hidden-notes-modal').classList.add('hidden');
+    }
+
+    function renderHiddenNotes() {
+      const container = document.getElementById('hidden-notes-list');
+      container.innerHTML = '';
+      let hidden = getHiddenNotes();
+      if (hidden.length === 0) { container.innerHTML = '<p style="color:#64748B; font-size:13px;">No tienes notas ocultas.</p>'; return; }
+
+      hidden.forEach(n => {
+        const waMsg = `✨ ━━━━━━━━━━━━━━━━━━━━━━\n¡Hola! 😊 Nota reservada:\n${n.title}\n\n📄 Contenido:\n${n.content}\n━━━━━━━━━━━━━━━━━━━━━━ ✨`;
+        const waText = encodeURIComponent(waMsg);
+        const waLink = userWhatsapp ? `https://api.whatsapp.com/send?phone=${userWhatsapp}&text=${waText}` : '#';
+        const photoHTML = n.photo ? `<div style="margin-top:6px;"><img src="${n.photo}" onclick="openLightbox('${n.photo}')" style="width:80px; height:80px; object-fit:cover; border-radius:6px; cursor:pointer;" title="Clic para ampliar"></div>` : '';
+
+        container.innerHTML += `
+          <div class="notepad-item" style="border-left-color: #6A5ACD;">
+            <span class="note-date-tag">📅 ${n.date || 'Reciente'}</span>
+            <div class="note-top-actions">
+              <a href="${waLink}" target="_blank" class="btn-icon-note" title="Recordar por WhatsApp" onclick="${!userWhatsapp ? "alert('Configura tu WhatsApp al iniciar.'); return false;" : ""}">💬</a>
+              <button class="btn-icon-note" onclick="unhideNoteConfirm('${n.id}')" title="Dejar de ocultar">🔓</button>
+              <button class="btn-icon-note" onclick="editHiddenNote('${n.id}')" title="Editar nota">✏️</button>
+              <button class="btn-icon-note" onclick="deleteHiddenNote('${n.id}')" title="Enviar a papelera">🗑️</button>
+            </div>
+            <strong style="font-size:15px; color:${n.color || 'inherit'};">🔒 ${n.title}</strong>
+            <p style="font-size:13px; margin:4px 0; color:${n.color || 'inherit'}; white-space:pre-wrap;">${n.content}</p>
+            ${photoHTML}
+          </div>
+        `;
+      });
+    }
+
+    function unhideNoteConfirm(id) {
+      if (confirm("¿Quieres mover esta nota al bloc público?")) {
+        let hidden = getHiddenNotes();
+        let notes = getNotes();
+        const noteToUnhide = hidden.find(n => n.id === id);
+        if (noteToUnhide) {
+          notes.push(noteToUnhide);
+          saveNotes(notes);
+          saveHiddenNotes(hidden.filter(n => n.id !== id));
+          renderHiddenNotes();
+          renderNotes();
+          alert("¡Nota desocultada con éxito!");
+        }
+      }
+    }
+
+    function editHiddenNote(id) {
+      let hidden = getHiddenNotes();
+      const n = hidden.find(item => item.id === id);
+      if (!n) return;
+      closeHiddenNotesModal();
+      setFilter('notas');
+      
+      document.getElementById('note-edit-id').value = n.id;
+      document.getElementById('note-is-hidden-val').value = 'true';
+      document.getElementById('note-title-input').value = n.title;
+      document.getElementById('note-content-input').value = n.content;
+      document.getElementById('note-color-input').value = n.color || '#374151';
+      document.getElementById('note-photo-input-val').value = n.photo || '';
+      
+      if (n.photo) {
+        document.getElementById('preview-photo-container').innerHTML = `
+          <div style="position:relative; display:inline-block; margin-top:6px;">
+            <img src="${n.photo}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+            <button onclick="removeCapturedPhoto()" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+          </div>
+        `;
+      } else {
+        document.getElementById('preview-photo-container').innerHTML = '';
+      }
+      
+      document.getElementById('note-save-btn').innerText = '💾 Actualizar Nota Oculta';
+    }
+
+    function deleteHiddenNote(id) {
+      let hidden = getHiddenNotes();
+      let trash = getTrashNotes();
+      const noteToTrash = hidden.find(n => n.id === id);
+      if (noteToTrash) {
+        trash.push(noteToTrash);
+        saveTrashNotes(trash);
+        saveHiddenNotes(hidden.filter(n => n.id !== id));
+        renderHiddenNotes();
+      }
+    }
+
+    function editNote(id) {
+      let notes = getNotes();
+      const n = notes.find(item => item.id === id);
+      if (!n) return;
+      document.getElementById('note-edit-id').value = n.id;
+      document.getElementById('note-is-hidden-val').value = 'false';
+      document.getElementById('note-title-input').value = n.title;
+      document.getElementById('note-content-input').value = n.content;
+      document.getElementById('note-color-input').value = n.color || '#374151';
+      document.getElementById('note-photo-input-val').value = n.photo || '';
+      if (n.photo) {
+        document.getElementById('preview-photo-container').innerHTML = `
+          <div style="position:relative; display:inline-block; margin-top:6px;">
+            <img src="${n.photo}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+            <button onclick="removeCapturedPhoto()" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+          </div>
+        `;
+      }
+      document.getElementById('note-save-btn').innerText = '💾 Actualizar Nota';
+    }
+
+    function deleteNote(id) {
+      let notes = getNotes();
+      let trash = getTrashNotes();
+      const noteToTrash = notes.find(n => n.id === id);
+      if (noteToTrash) {
+        trash.push(noteToTrash);
+        saveTrashNotes(trash);
+        saveNotes(notes.filter(n => n.id !== id));
+        renderNotes();
+      }
+    }
+
+    function openTrashModal() {
+      document.getElementById('trash-modal').classList.remove('hidden');
+      renderTrashNotes();
+    }
+
+    function closeTrashModal() {
+      document.getElementById('trash-modal').classList.add('hidden');
+    }
+
+    function renderTrashNotes() {
+      const container = document.getElementById('trash-container');
+      container.innerHTML = '';
+      let trash = getTrashNotes();
+      if (trash.length === 0) { container.innerHTML = '<p style="color:#64748B; font-size:13px;">La papelera está vacía.</p>'; return; }
+
+      trash.forEach(n => {
+        container.innerHTML += `
+          <div style="background:var(--input-bg); padding:12px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border: 1px solid var(--border-color);">
+            <div>
+              <strong style="font-size:14px;">${n.title}</strong>
+              <div style="font-size:11px; color:#64748B;">${n.date || ''}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-action" onclick="restoreNote('${n.id}')" style="background:#10B981; color:white; padding:4px 8px; font-size:11px;">Restaurar</button>
+              <button class="btn-action" onclick="permanentDeleteNote('${n.id}')" style="background:#EF4444; color:white; padding:4px 8px; font-size:11px;">Eliminar</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function restoreNote(id) {
+      let trash = getTrashNotes();
+      let notes = getNotes();
+      const noteToRestore = trash.find(n => n.id === id);
+      if (noteToRestore) {
+        notes.push(noteToRestore);
+        saveNotes(notes);
+        saveTrashNotes(trash.filter(n => n.id !== id));
+        renderTrashNotes();
+        renderNotes();
+      }
+    }
+
+    function permanentDeleteNote(id) {
+      let trash = getTrashNotes();
+      saveTrashNotes(trash.filter(n => n.id !== id));
+      renderTrashNotes();
+    }
+
+    function openGalleryModal() {
+      document.getElementById('gallery-modal').classList.remove('hidden');
+      renderAppGallery();
+    }
+
+    function closeGalleryModal() {
+      document.getElementById('gallery-modal').classList.add('hidden');
+    }
+
+    function renderAppGallery() {
+      const container = document.getElementById('gallery-container');
+      container.innerHTML = '';
+      let notes = getNotes();
+      let hidden = getHiddenNotes();
+      let tasks = getTasks();
+      let allPhotos = [];
+
+      notes.forEach(n => { if (n.photo) allPhotos.push({ label: `[Nota] ${n.title}`, date: n.date || 'Reciente', photo: n.photo }); });
+      hidden.forEach(n => { if (n.photo) allPhotos.push({ label: `[Nota Oculta] ${n.title}`, date: n.date || 'Reciente', photo: n.photo }); });
+      tasks.forEach(t => { if (t.photo) allPhotos.push({ label: `[Tarea] ${t.text}`, date: t.dueDate || 'Sin fecha', photo: t.photo }); });
+
+      if (allPhotos.length === 0) {
+        container.innerHTML = '<p style="color:#64748B; font-size:13px; grid-column: span 3;">No hay fotografías subidas todavía.</p>';
+        return;
+      }
+
+      allPhotos.forEach(item => {
+        container.innerHTML += `
+          <div style="background:var(--input-bg); padding:8px; border-radius:10px; border:1px solid var(--border-color); text-align:center;">
+            <img src="${item.photo}" onclick="openLightbox('${item.photo}')" style="width:100%; height:110px; object-fit:cover; border-radius:8px; cursor:pointer;" title="Clic para ampliar y hacer zoom">
+            <div style="font-size:11px; font-weight:800; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--primary-color);" title="${item.label}">${item.label}</div>
+            <div style="font-size:10px; color:#64748B; margin-top:2px;">📅 ${item.date}</div>
+          </div>
+        `;
+      });
+    }
+
+    function addTask() {
+      const text = document.getElementById('task-input').value;
+      const category = document.getElementById('category-input').value;
+      const description = document.getElementById('desc-input').value;
+      const dueDate = document.getElementById('date-input').value;
+      const priority = document.getElementById('priority-input').value;
+      const photo = document.getElementById('task-photo-input-val').value;
+      if (!text) { alert('Escribe el nombre de la tarea.'); return; }
+      let tasks = getTasks();
+      tasks.push({ id: Date.now().toString(), text, category, description, dueDate, priority, photo, completed: false });
+      saveTasks(tasks);
+      document.getElementById('task-input').value = '';
+      document.getElementById('desc-input').value = '';
+      document.getElementById('date-input').value = '';
+      document.getElementById('task-photo-input-val').value = '';
+      document.getElementById('task-preview-photo-container').innerHTML = '';
+      renderTasks();
+    }
+
+    function openEditModal(id) {
+      let tasks = getTasks();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      document.getElementById('edit-id').value = task.id;
+      document.getElementById('edit-text').value = task.text;
+      document.getElementById('edit-category').value = task.category || 'Escolar';
+      document.getElementById('edit-desc').value = task.description || '';
+      document.getElementById('edit-date').value = task.dueDate || '';
+      document.getElementById('edit-priority').value = task.priority || 'normal';
+      document.getElementById('edit-photo-input-val').value = task.photo || '';
+      if (task.photo) {
+        document.getElementById('edit-preview-photo-container').innerHTML = `
+          <div style="position:relative; display:inline-block;">
+            <img src="${task.photo}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; border:1px solid var(--border-color);">
+            <button onclick="document.getElementById('edit-photo-input-val').value=''; document.getElementById('edit-preview-photo-container').innerHTML='';" style="position:absolute; top:-6px; right:-6px; background:#EF4444; color:white; border:none; border-radius:50%; width:20px; height:20px; font-size:10px; cursor:pointer;">×</button>
+          </div>
+        `;
+      } else {
+        document.getElementById('edit-preview-photo-container').innerHTML = '';
+      }
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+    function saveEditedTask() {
+      const id = document.getElementById('edit-id').value;
+      const photo = document.getElementById('edit-photo-input-val').value;
+      let tasks = getTasks().map(t => {
+        if (t.id === id) {
+          t.text = document.getElementById('edit-text').value;
+          t.category = document.getElementById('edit-category').value;
+          t.description = document.getElementById('edit-desc').value;
+          t.dueDate = document.getElementById('edit-date').value;
+          t.priority = document.getElementById('edit-priority').value;
+          t.photo = photo;
+        }
+        return t;
+      });
+      saveTasks(tasks);
+      closeEditModal();
+      renderTasks();
+    }
+
+    function toggleTask(id) {
+      let tasks = getTasks().map(t => { if (t.id === id) t.completed = !t.completed; return t; });
+      saveTasks(tasks);
+      renderTasks();
+    }
+
+    function deleteTask(id) {
+      let tasks = getTasks().filter(t => t.id !== id);
+      saveTasks(tasks);
+      renderTasks();
+    }
+
+    function checkTaskAlerts() {
+      const now = new Date();
+      let tasks = getTasks();
+      tasks.forEach(t => {
+        if (!t.completed && t.dueDate) {
+          const dueTime = new Date(t.dueDate).getTime();
+          const diffHours = (dueTime - now.getTime()) / (1000 * 60 * 60);
+          if (diffHours > 0 && diffHours <= 24 && diffHours > 8) {
+            console.log(`⚠️ Alerta (1 día antes): "${t.text}" vence pronto.`);
+          } else if (diffHours > 0 && diffHours <= 8) {
+            console.log(`🚨 ALERTA CRÍTICA (8 horas antes): "${t.text}" vence en pocas horas.`);
+          }
+        }
+      });
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid-days');
+      grid.innerHTML = '';
+      const month = parseInt(document.getElementById('cal-month').value);
+      const year = parseInt(document.getElementById('cal-year').value);
+      const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      daysOfWeek.forEach(d => { grid.innerHTML += `<div class="calendar-day-head">${d}</div>`; });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      let tasks = getTasks();
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day" style="background:transparent; border:none; cursor:default;"></div>`;
+      }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const mStr = (month + 1) < 10 ? `0${month + 1}` : `${month + 1}`;
+        const dStr = day < 10 ? `0${day}` : `${day}`;
+        const targetDate = `${year}-${mStr}-${dStr}`;
+        const dayTasks = tasks.filter(t => !t.completed && t.dueDate === targetDate);
+
+        let tasksHTML = '';
+        dayTasks.forEach(t => {
+          let priorityClass = 'cal-normal';
+          if (t.priority === 'urgente') priorityClass = 'cal-urgente';
+          else if (t.priority === 'media') priorityClass = 'cal-media';
+          const descClean = (t.description || 'Sin descripción').replace(/'/g, "\\'");
+          tasksHTML += `<div class="cal-task-tag ${priorityClass}" onclick="event.stopPropagation(); alert('📌 Tarea: ${t.text}\\n📂 Categoría: ${t.category}\\n📝 Descripción: ${descClean}')">${t.text}</div>`;
+        });
+
+        grid.innerHTML += `
+          <div class="calendar-day" onclick="onCalendarDayClick('${targetDate}')" title="Clic para gestionar tareas de este día">
+            <div class="calendar-day-num">${day}</div>
+            ${tasksHTML}
+          </div>
+        `;
+      }
+    }
+
+    function onCalendarDayClick(dateStr) {
+      let tasks = getTasks();
+      let dayTasks = tasks.filter(t => t.dueDate === dateStr);
+      if (dayTasks.length === 0) {
+        let addMore = confirm(`No hay tareas el ${dateStr}. ¿Deseas agregar una tarea para este día?`);
+        if (addMore) {
+          let taskName = prompt("Nombre de la tarea:");
+          if (taskName) {
+            tasks.push({ id: Date.now().toString(), text: taskName, category: 'Escolar', description: 'Agregado desde calendario', dueDate: dateStr, priority: 'normal', completed: false });
+            saveTasks(tasks);
+            renderCalendar();
+            alert("¡Tarea agregada!");
+          }
+        }
+      } else {
+        let taskListStr = dayTasks.map((t, index) => `${index + 1}. ${t.text} (${t.category})`).join('\n');
+        let choice = prompt(`Tareas el ${dateStr}:\n${taskListStr}\n\nEscribe el número de la tarea que deseas ELIMINAR, o escribe "nueva" para agregar otra en este día:`);
+        if (choice && choice.toLowerCase() === 'nueva') {
+          let taskName = prompt("Nombre de la nueva tarea:");
+          if (taskName) {
+            tasks.push({ id: Date.now().toString(), text: taskName, category: 'Escolar', description: 'Agregado desde calendario', dueDate: dateStr, priority: 'normal', completed: false });
+            saveTasks(tasks);
+            renderCalendar();
+            alert("¡Tarea agregada!");
+          }
+        } else if (choice && !isNaN(choice)) {
+          let index = parseInt(choice) - 1;
+          if (dayTasks[index]) {
+            let taskIdToDelete = dayTasks[index].id;
+            tasks = tasks.filter(t => t.id !== taskIdToDelete);
+            saveTasks(tasks);
+            renderCalendar();
+            alert("¡Tarea eliminada del calendario!");
+          }
+        }
+      }
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+    }
+  </script>
+</body>
+</html>
