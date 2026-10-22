@@ -1,7 +1,7 @@
 
 {
-  "name": "My To-Do List & Languages",
-  "short_name": "To-Do App",
+  "name": "My To-Do List",
+  "short_name": "My To-Do List",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#CCCCFF",
